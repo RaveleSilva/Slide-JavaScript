@@ -2,7 +2,12 @@ export default class Slide {
   constructor(slide, wrapper) {
     this.slide = document.querySelector(slide);
     this.wrapper = document.querySelector(wrapper);
-    this.distance = {finalPosition: 0, startX: 0, movement:0};
+    this.distance = { finalPosition: 0, startX: 0, movement: 0 };
+    this.index = { previous: undefined, active: 0, next: undefined };
+  }
+
+  transition(active) {
+    this.slide.style.transition = active ? 'transform .3s' : '';
   }
 
   moveSlide(distanceX) {
@@ -26,6 +31,7 @@ export default class Slide {
       movetype = 'touchmove'
     }
     this.wrapper.addEventListener(movetype, this.onMove);
+    this.transition(false);
   }
 
   onMove(event) {
@@ -37,7 +43,19 @@ export default class Slide {
   onEnd(event) {
     const movetype = (event.type === 'mouseup') ? 'mousemove' : 'touchmove';
     this.wrapper.removeEventListener(movetype, this.onMove);
-    this.distance.finalPosition = this.distance.movePosition
+    this.distance.finalPosition = this.distance.movePosition;
+    this.transition(true);
+    this.changeSlideOnEnd();
+  }
+
+  changeSlideOnEnd() {
+    if (this.distance.movement > 120 && this.index.next !== undefined) {
+      this.activeNextSlide();
+    } else if (this.distance.movement < -120 && this.index.previous !== undefined) {
+      this.activePrevSlide();
+    } else {
+      this.changeSlide(this.index.active);
+    }
   }
 
   addSlideEvents() {
@@ -58,7 +76,7 @@ export default class Slide {
     return - (slide.offsetLeft - margin);
   }
 
-  slideConfig() {
+  slidesConfig() {
     this.slideArray = [...this.slide.children].map((element) => {
       const position = this.slidePosition(element);
       return { element, position };
@@ -76,14 +94,24 @@ export default class Slide {
 
   changeSlide(index) {
     const activeSlide = this.slideArray[index];
-    this.moveSlide(this.slideArray[index].position);
+    this.moveSlide(activeSlide.position);
     this.slidesIndexNav(index);
     this.distance.finalPosition = activeSlide.position;
   }
 
-  Init() {
+  activePrevSlide() {
+    if (this.index.previous !== undefined) this.changeSlide(this.index.previous);
+  }
+
+  activeNextSlide() {
+    if (this.index.next !== undefined) this.changeSlide(this.index.next);
+  }
+
+  init() {
     this.bindEvents();
+    this.transition(true);
     this.addSlideEvents();
+    this.slidesConfig();
     return this;
   }
 }
